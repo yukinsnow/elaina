@@ -1,63 +1,30 @@
 {
   "name": "elaina",
-  "productName": "ELAINA",
-  "version": "1.0.0",
-  "description": "A GUI tools for ffmpeg",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "electron-forge start",
-    "test": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
-  },
-  "keywords": [],
-  "author": {
-    "name": "Yukinsnow",
-    "email": "yukinsnow@gmail.com"
-  },
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "轻巧的本地视频与音频处理工具",
+  "author": "yukinsnow",
   "license": "GPL",
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "./src/icons/icon"
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "my_new_app"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ]
-    }
+  "scripts": {
+    "start": "tauri dev",
+    "dev": "vite --host 127.0.0.1",
+    "check": "tsc --noEmit",
+    "build": "npm run check && vite build",
+    "test": "node --test tests/*.test.mjs",
+    "tauri": "tauri",
+    "package": "tauri build",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.0",
-    "ffmpeg-static-electron": "^2.0.3",
-    "fluent-ffmpeg": "^2.1.2"
+    "@tauri-apps/api": "^2.12.4"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.66",
-    "@electron-forge/maker-deb": "^6.0.0-beta.66",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.66",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.66",
-    "@electron-forge/maker-zip": "^6.0.0-beta.66",
-    "electron": "20.1.2"
+    "@tauri-apps/cli": "^2.12.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -1,5 +1,8 @@
 /node_modules
-/out
+/dist
+/src-tauri/target
+/src-tauri/gen
+/work
+.DS_Store
 .vscode/*
 !.vscode/settings.json
-.DS_Store

@@ -2,6 +2,7 @@
 #![allow(non_camel_case_types)]
 
 mod media;
+mod runtime;
 
 use serde::Serialize as serialize;
 use std::{io::{BufRead as buf_read, BufReader as buf_reader, Read as read}, process::{Child as child, Command as command, Stdio as stdio}, sync::Mutex as mutex, time::Duration as duration};
@@ -38,14 +39,16 @@ fn start_job(app: tauri::AppHandle, state: tauri::State<'_, tasks>, job: media::
     let args = media::arguments(&job)?;
     let mut task = state.0.lock().map_err(|e| e.to_string())?;
     if task.child.is_some() { return Err("已有任务正在执行".into()); }
-    let executable = std::env::var_os("elaina_ffmpeg").unwrap_or_else(|| "ffmpeg".into());
+    let executable_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let directory = executable_path.parent().ok_or("无法确定应用目录")?;
+    let executable = runtime::ffmpeg(directory, std::env::var_os("elaina_ffmpeg"));
     let mut cmd = command::new(executable);
     cmd.args(args).stdin(stdio::null()).stdout(stdio::piped()).stderr(stdio::piped());
     #[cfg(windows)] {
         use std::os::windows::process::CommandExt as command_ext;
         cmd.creation_flags(0x08000000);
     }
-    let mut process = cmd.spawn().map_err(|e| format!("无法启动 ffmpeg，请安装并加入 path，或设置 elaina_ffmpeg：{e}"))?;
+    let mut process = cmd.spawn().map_err(|e| format!("无法启动 ffmpeg，请将其放到应用同目录、加入 path，或设置 elaina_ffmpeg：{e}"))?;
     let stdout = process.stdout.take().ok_or("无法读取任务进度")?;
     let stderr = process.stderr.take().ok_or("无法读取任务日志")?;
     task.cancelled = false;
@@ -109,9 +112,18 @@ fn cancel_job(state: tauri::State<'_, tasks>) -> Result<(), String> {
 }
 
 fn main() {
+    let mut context = tauri::generate_context!();
+    if cfg!(windows) {
+        if let Ok(executable) = std::env::current_exe() {
+            if let Some(directory) = executable.parent().and_then(runtime::portable_data) {
+                std::fs::create_dir_all(&directory).expect("failed to create portable data directory");
+                context.config_mut().app.app_directories_override = Some(tauri::utils::config::AppDirectoriesOverride::Root(directory));
+            }
+        }
+    }
     tauri::Builder::default().manage(tasks::default())
         .invoke_handler(tauri::generate_handler![choose_file, start_job, cancel_job])
-        .build(tauri::generate_context!()).expect("failed to build elaina")
+        .build(context).expect("failed to build elaina")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
                 let state = app.state::<tasks>();

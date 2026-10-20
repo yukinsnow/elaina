@@ -43,6 +43,19 @@ jobs:
       - run: npm run build
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       - run: npm run tauri -- build --bundles ${{ matrix.bundles }}
+      - name: package windows portable
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: ./scripts/package-portable.ps1
+      - name: test bundled media processing
+        if: matrix.name == 'windows'
+        run: cargo test --manifest-path src-tauri/Cargo.toml ffmpeg_roundtrip -- --ignored
+      - uses: actions/upload-artifact@v4
+        if: matrix.name == 'windows'
+        with:
+          name: elaina-windows-portable
+          path: artifacts/elaina-*-windows-x64-portable.zip*
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: elaina-${{ matrix.name }}

@@ -22,6 +22,25 @@
 
 ## 下载与运行
 
+### windows 绿色版（推荐）
+
+下载 release 中的 `elaina-2.0.1-windows-x64-portable.zip`，完整解压到可写目录，双击 `elaina.exe` 即可运行。随包包含 ffmpeg，不需要配置 path、安装应用或管理员权限。需要系统已有 webview2；绿色包不安装系统组件。
+
+应用缓存保存在同目录的 `data` 文件夹。移动时请保留 `elaina.exe`、`ffmpeg.exe` 和 `portable` 标记文件；关闭应用后删除整个目录即可移除应用与缓存，已导出的媒体文件不受影响。系统运行组件自身可能保留操作系统管理的记录。
+
+绿色版目录：
+
+```text
+elaina.exe             应用
+ffmpeg.exe             媒体处理程序
+portable               绿色版标记
+data/                  本地缓存（运行时写入）
+readme.txt             使用说明
+third-party/ffmpeg/    ffmpeg 许可和上游说明
+```
+
+### 安装包与其他平台
+
 从 [releases](https://github.com/yukinsnow/elaina/releases) 下载对应系统的安装包。构建也会上传到 [actions](https://github.com/yukinsnow/elaina/actions/workflows/check.yml) 的 artifacts；下载 artifacts 需要登录 github。
 
 | 系统 | 安装包 | 运行依赖 |
@@ -30,7 +49,7 @@
 | macos | `.dmg` | ffmpeg |
 | linux | `.deb` | webkitgtk 4.1、ffmpeg |
 
-**应用不内嵌 ffmpeg。** 安装含所需编码器的 ffmpeg，并将其加入系统的 `path`；也可以在启动应用前通过环境变量 `elaina_ffmpeg` 指定绝对路径。请先运行 `ffmpeg -version` 确认可用。编码器是否可用取决于安装的 ffmpeg 构建。
+**安装包及其他平台发行包不内嵌 ffmpeg，windows 绿色版已附带。** 安装含所需编码器的 ffmpeg，并将其加入系统的 `path`；也可以在启动应用前通过环境变量 `elaina_ffmpeg` 指定绝对路径。请先运行 `ffmpeg -version` 确认可用。编码器是否可用取决于所用 ffmpeg 构建。查找顺序为：`elaina_ffmpeg` 环境变量 → 应用同目录的 ffmpeg → 系统 path。
 
 windows 示例：
 
@@ -84,11 +103,13 @@ npm test               # 前端参数测试
 npm run build          # 类型检查与前端生产构建
 npm run test:rust      # rust 参数校验与命令构造测试
 npm run package        # 当前平台的桌面安装包
+# windows 构建成功后，生成附带 ffmpeg 的绿色包
+pwsh -File scripts/package-portable.ps1
 ```
 
 安装包输出到 `src-tauri/target/release/bundle/`。各平台应在对应系统构建，架构取决于所选 rust target。构建所需的 node.js、rust 和编译工具不是安装包使用者的运行依赖。
 
-[构建工作流](.github/workflows/check.yml) 在 windows、macos、linux 上运行测试、原生编译和打包，并上传安装包。推送到 main 或手动运行工作流会触发构建；构建结果以对应 actions 运行记录为准。
+[构建工作流](.github/workflows/check.yml) 在 windows、macos、linux 上运行测试、原生编译和打包，并上传安装包和 windows 绿色包。windows 还会使用随包 ffmpeg 执行压制、提取及替换的媒体处理测试。推送到 main 或手动运行工作流会触发构建；构建结果以对应 actions 运行记录为准。
 
 ## 项目结构
 
@@ -100,6 +121,8 @@ src/g2.jpg                   原背景插图
 src/fonts/                   原 photon 图标字体
 src-tauri/src/media.rs        rust 参数校验与 ffmpeg 命令构造
 src-tauri/src/main.rs         文件对话框、任务生命周期、状态事件
+src-tauri/src/runtime.rs      同目录 ffmpeg 查找与绿色版缓存目录
+scripts/package-portable.ps1  windows 绿色包生成
 src-tauri/icons/             原应用图标
 tests/                      前端参数测试
 ```

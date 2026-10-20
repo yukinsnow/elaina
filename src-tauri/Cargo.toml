@@ -1,6 +1,6 @@
 [package]
 name = "elaina"
-version = "2.0.0"
+version = "2.0.1"
 description = "local video and audio toolkit"
 authors = ["yukinsnow"]
 edition = "2021"
@@ -9,7 +9,7 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2.12", features = [] }
 serde = { version = "1", features = ["derive"] }
 rfd = "0.15"
 

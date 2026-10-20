@@ -74,6 +74,28 @@ pub fn arguments(job: &request) -> Result<Vec<String>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "requires elaina_test_ffmpeg pointing to the portable ffmpeg binary"]
+    fn ffmpeg_roundtrip() {
+        let executable = std::env::var_os("elaina_test_ffmpeg").expect("set elaina_test_ffmpeg");
+        let directory = std::env::temp_dir().join(format!("elaina-media-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let source = directory.join("source video.mp4");
+        let generated = std::process::Command::new(&executable).args(["-hide_banner", "-loglevel", "error", "-nostdin", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=10:duration=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:v", "libx264", "-c:a", "aac", "-shortest"]).arg(&source).output().unwrap();
+        assert!(generated.status.success(), "{}", String::from_utf8_lossy(&generated.stderr));
+        let mut job = fixture();
+        job.video = source.to_string_lossy().into();
+        job.width = 64; job.height = 64; job.fps = 10;
+        for (mode, filename) in [("encode", "encoded video.mp4"), ("extract", "audio.wav"), ("replace", "replaced video.mkv")] {
+            job.mode = mode.into();
+            job.audio = directory.join("audio.wav").to_string_lossy().into();
+            job.output = directory.join(filename).to_string_lossy().into();
+            let result = std::process::Command::new(&executable).args(arguments(&job).unwrap()).output().unwrap();
+            assert!(result.status.success(), "{mode}: {}", String::from_utf8_lossy(&result.stderr));
+            assert!(std::fs::metadata(&job.output).unwrap().len() > 44);
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
     fn fixture() -> request {
         request { mode: "encode".into(), video: std::env::current_exe().unwrap().to_string_lossy().into(), audio: String::new(), output: std::env::temp_dir().join(format!("elaina-test-{}.mp4", std::process::id())).to_string_lossy().into(), video_codec: "libx264".into(), audio_codec: "aac".into(), video_bitrate: 4000, audio_bitrate: 192, fps: 30, width: 1920, height: 1080 }
     }

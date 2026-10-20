@@ -52,8 +52,9 @@ ffmpeg 源码：https://ffmpeg.org/releases/ffmpeg-$ffmpeg_version.tar.xz
 
 此包未配置代码签名。
 "@ | Set-Content -LiteralPath (Join-Path $package 'readme.txt') -Encoding utf8
-& (Join-Path $package 'ffmpeg.exe') -version | Select-Object -First 1
+$ffmpeg_output = & (Join-Path $package 'ffmpeg.exe') -version
 if ($LASTEXITCODE -ne 0) { throw 'bundled ffmpeg failed to start' }
+$ffmpeg_output | Select-Object -First 1
 $null = New-Item -ItemType Directory -Path $destination -Force
 $archive_path = Join-Path (Resolve-Path -LiteralPath $destination).Path "elaina-$version-windows-x64-portable.zip"
 Add-Type -AssemblyName System.IO.Compression.FileSystem

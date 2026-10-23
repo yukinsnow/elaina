@@ -10,7 +10,7 @@ root.innerHTML = `
   <header class="app-header"><div class="brand"><img src="${icon}" alt="elaina 应用图标" width="42" height="42"/><div><h1>elaina</h1><p>视频与音频处理</p></div></div><span class="local-label">本地处理</span></header>
   <div class="workbench">
     <nav class="mode-tabs" aria-label="处理任务"><button type="button" data-mode="encode" aria-pressed="true">视频压制</button><button type="button" data-mode="replace" aria-pressed="false">替换音频</button><button type="button" data-mode="extract" aria-pressed="false">提取音频</button></nav>
-    <form id="job-form" class="workspace">
+    <form id="job-form" class="workspace" novalidate>
       <section class="file-section" aria-label="文件选择">
         <label for="video">源视频</label><div class="file-row"><input id="video" placeholder="选择视频，或输入完整路径"/><button type="button" data-pick="video">浏览…</button></div>
         <p id="source-info" class="field-note">支持 mp4、mkv、mov 等常见格式。</p>
@@ -56,10 +56,12 @@ function status(title: string, message: string, state = '') {
   element('status').dataset.state = state;
 }
 function job_values(): request {
+  const video_encoding = current_mode === 'encode' && input('video_codec').value !== 'copy';
+  const audio_encoding = current_mode === 'encode' && input('audio_codec').value !== 'copy';
   return { mode: current_mode, video: input('video').value, audio: input('audio').value, output: input('output').value,
     video_codec: input('video_codec').value, audio_codec: input('audio_codec').value,
-    video_bitrate: Number(input('video_bitrate').value), audio_bitrate: Number(input('audio_bitrate').value),
-    fps: Number(input('fps').value), width: Number(input('width').value), height: Number(input('height').value),
+    video_bitrate: video_encoding ? Number(input('video_bitrate').value) : 2000, audio_bitrate: audio_encoding ? Number(input('audio_bitrate').value) : 320,
+    fps: video_encoding ? Number(input('fps').value) : 60, width: video_encoding ? Number(input('width').value) : 1920, height: video_encoding ? Number(input('height').value) : 1080,
     bilibili: input('bilibili').checked, faststart: input('faststart').checked };
 }
 function file_size(bytes: number): string { return bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} gb` : `${(bytes / 1024 ** 2).toFixed(1)} mb`; }
@@ -98,6 +100,7 @@ function controls() {
   }
   element<HTMLButtonElement>('inspect-source').disabled = busy || inspecting || !native_ready || !input('video').value.trim();
   element<HTMLButtonElement>('inspect-output').disabled = busy || inspecting || !native_ready || !input('output').value.trim();
+  if (current_mode !== 'encode') element('encoding').querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach(control => { control.disabled = true; });
   if (!native_ready) root.querySelectorAll<HTMLButtonElement>('[data-pick], #submit').forEach(button => { button.disabled = true; });
 }
 async function inspect_file(target: 'video' | 'output', expand = true) {

@@ -1,10 +1,18 @@
 use std::{ffi::OsString as os_string, path::{Path as path, PathBuf as path_buf}};
 
 pub fn ffmpeg(directory: &path, override_path: Option<os_string>) -> os_string {
+    tool(directory, "ffmpeg", override_path)
+}
+
+pub fn ffprobe(directory: &path, override_path: Option<os_string>) -> os_string {
+    tool(directory, "ffprobe", override_path)
+}
+
+fn tool(directory: &path, name: &str, override_path: Option<os_string>) -> os_string {
     if let Some(value) = override_path.filter(|value| !value.is_empty()) { return value; }
-    let bundled = directory.join(if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" });
+    let bundled = directory.join(if cfg!(windows) { format!("{name}.exe") } else { name.into() });
     if bundled.is_file() { return bundled.into_os_string(); }
-    "ffmpeg".into()
+    name.into()
 }
 
 pub fn portable_data(directory: &path) -> Option<path_buf> {

@@ -1,6 +1,6 @@
 {
   "name": "elaina",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "轻巧的本地视频与音频处理工具",

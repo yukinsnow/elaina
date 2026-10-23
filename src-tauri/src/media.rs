@@ -15,6 +15,10 @@ pub struct request {
     pub fps: u32,
     pub width: u32,
     pub height: u32,
+    #[serde(default)]
+    pub bilibili: bool,
+    #[serde(default)]
+    pub faststart: bool,
 }
 
 pub fn arguments(job: &request) -> Result<Vec<String>, String> {
@@ -39,6 +43,9 @@ pub fn arguments(job: &request) -> Result<Vec<String>, String> {
     args.push(job.video.clone());
     match job.mode.as_str() {
         "encode" => {
+            if job.bilibili && (job.video_codec != "libx264" || job.audio_codec != "aac") {
+                return Err("投稿兼容处理需要 h.264 + aac".into());
+            }
             if !["copy", "libx264", "libx265", "libxvid", "libaom-av1", "mpeg4"].contains(&job.video_codec.as_str())
                 || !["copy", "aac", "flac", "libmp3lame", "pcm_s16le"].contains(&job.audio_codec.as_str()) {
                 return Err("不支持的编码器".into());
@@ -56,6 +63,9 @@ pub fn arguments(job: &request) -> Result<Vec<String>, String> {
                 if !(32..=1536).contains(&job.audio_bitrate) { return Err("音频码率应为 32–1536 kbps".into()); }
                 args.extend(["-b:a".into(), format!("{}k", job.audio_bitrate)]);
             }
+            if job.bilibili {
+                args.extend(["-pix_fmt".into(), "yuv420p".into(), "-profile:v".into(), "high".into(), "-g".into(), (job.fps * 2).to_string(), "-ac".into(), "2".into(), "-ar".into(), "48000".into()]);
+            }
         }
         "replace" => {
             if !Path::new(&job.audio).is_absolute() || !Path::new(&job.audio).is_file() {
@@ -67,6 +77,7 @@ pub fn arguments(job: &request) -> Result<Vec<String>, String> {
         _ => return Err("未知任务类型".into()),
     }
     if extension == "mp4" { args.extend(["-strict".into(), "-2".into()]); }
+    if extension == "mp4" && job.faststart { args.extend(["-movflags".into(), "+faststart".into()]); }
     args.push(job.output.clone());
     Ok(args)
 }
@@ -83,9 +94,10 @@ mod tests {
         let source = directory.join("source video.mp4");
         let generated = std::process::Command::new(&executable).args(["-hide_banner", "-loglevel", "error", "-nostdin", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=10:duration=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:v", "libx264", "-c:a", "aac", "-shortest"]).arg(&source).output().unwrap();
         assert!(generated.status.success(), "{}", String::from_utf8_lossy(&generated.stderr));
+        let probe = std::path::Path::new(&executable).parent().unwrap().join(if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" });
         let mut job = fixture();
         job.video = source.to_string_lossy().into();
-        job.width = 64; job.height = 64; job.fps = 10;
+        job.width = 64; job.height = 64; job.fps = 10; job.bilibili = true; job.faststart = true;
         for (mode, filename) in [("encode", "encoded video.mp4"), ("extract", "audio.wav"), ("replace", "replaced video.mkv")] {
             job.mode = mode.into();
             job.audio = directory.join("audio.wav").to_string_lossy().into();
@@ -93,11 +105,30 @@ mod tests {
             let result = std::process::Command::new(&executable).args(arguments(&job).unwrap()).output().unwrap();
             assert!(result.status.success(), "{mode}: {}", String::from_utf8_lossy(&result.stderr));
             assert!(std::fs::metadata(&job.output).unwrap().len() > 44);
+            let metadata = crate::inspect::inspect(probe.as_os_str(), &job.output).unwrap();
+            let metadata = serde_json::to_value(metadata).unwrap();
+            if mode == "encode" {
+                assert_eq!(metadata["video"]["codec"], "h264");
+                assert_eq!(metadata["video"]["pixel_format"], "yuv420p");
+                assert_eq!(metadata["audio"]["codec"], "aac");
+                assert_eq!(metadata["audio"]["channels"], 2);
+                assert_eq!(metadata["audio"]["sample_rate"], 48000);
+                let bytes = std::fs::read(&job.output).unwrap();
+                let mut offset = 0;
+                let mut atoms = Vec::new();
+                while offset + 8 <= bytes.len() {
+                    let size = u32::from_be_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+                    if size < 8 || offset + size > bytes.len() { break; }
+                    atoms.push(String::from_utf8_lossy(&bytes[offset + 4..offset + 8]).into_owned());
+                    offset += size;
+                }
+                assert!(atoms.iter().position(|atom| atom == "moov").unwrap() < atoms.iter().position(|atom| atom == "mdat").unwrap());
+            }
         }
         std::fs::remove_dir_all(directory).unwrap();
     }
     fn fixture() -> request {
-        request { mode: "encode".into(), video: std::env::current_exe().unwrap().to_string_lossy().into(), audio: String::new(), output: std::env::temp_dir().join(format!("elaina-test-{}.mp4", std::process::id())).to_string_lossy().into(), video_codec: "libx264".into(), audio_codec: "aac".into(), video_bitrate: 4000, audio_bitrate: 192, fps: 30, width: 1920, height: 1080 }
+        request { mode: "encode".into(), video: std::env::current_exe().unwrap().to_string_lossy().into(), audio: String::new(), output: std::env::temp_dir().join(format!("elaina-test-{}.mp4", std::process::id())).to_string_lossy().into(), video_codec: "libx264".into(), audio_codec: "aac".into(), video_bitrate: 4000, audio_bitrate: 192, fps: 30, width: 1920, height: 1080, bilibili: false, faststart: false }
     }
     #[test]
     fn encode_preserves_argument_boundaries() {
@@ -112,6 +143,18 @@ mod tests {
     fn copy_ignores_encoding_settings() {
         let mut job = fixture(); job.video_codec = "copy".into(); job.fps = 0;
         assert!(!arguments(&job).unwrap().contains(&"-vf".into()));
+    }
+    #[test]
+    fn posting_options_require_compatible_codecs_and_faststart_only_for_mp4() {
+        let mut job = fixture(); job.bilibili = true; job.faststart = true;
+        let args = arguments(&job).unwrap();
+        assert!(args.contains(&"yuv420p".into()));
+        assert!(args.contains(&"48000".into()));
+        assert!(args.contains(&"+faststart".into()));
+        job.video_codec = "copy".into(); assert!(arguments(&job).is_err());
+        job.bilibili = false;
+        job.output = std::env::temp_dir().join(format!("elaina-test-{}.mkv", std::process::id())).to_string_lossy().into();
+        assert!(!arguments(&job).unwrap().contains(&"+faststart".into()));
     }
     #[test]
     fn rejects_invalid_dimensions_and_codec() {

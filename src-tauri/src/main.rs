@@ -3,6 +3,7 @@
 
 mod media;
 mod runtime;
+mod inspect;
 
 use serde::Serialize as serialize;
 use std::{io::{BufRead as buf_read, BufReader as buf_reader, Read as read}, process::{Child as child, Command as command, Stdio as stdio}, sync::Mutex as mutex, time::Duration as duration};
@@ -32,6 +33,16 @@ async fn choose_file(kind: String, format: String) -> Result<Option<String>, Str
         _ => return Err("无效的文件类型".into()),
     };
     Ok(selected.map(|file| file.path().to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
+async fn inspect_media(filename: String) -> Result<inspect::inspection, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let executable_path = std::env::current_exe().map_err(|e| e.to_string())?;
+        let directory = executable_path.parent().ok_or("无法确定应用目录")?;
+        let executable = runtime::ffprobe(directory, std::env::var_os("elaina_ffprobe"));
+        inspect::inspect(&executable, &filename)
+    }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -122,7 +133,7 @@ fn main() {
         }
     }
     tauri::Builder::default().manage(tasks::default())
-        .invoke_handler(tauri::generate_handler![choose_file, start_job, cancel_job])
+        .invoke_handler(tauri::generate_handler![choose_file, inspect_media, start_job, cancel_job])
         .build(context).expect("failed to build elaina")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {

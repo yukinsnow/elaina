@@ -23,6 +23,7 @@ $null = New-Item -ItemType Directory -Path $notices -Force
 $null = New-Item -ItemType Directory -Path (Join-Path $package 'data') -Force
 Copy-Item -LiteralPath $binary_path -Destination (Join-Path $package 'elaina.exe')
 Copy-Item -LiteralPath (Join-Path $upstream 'bin/ffmpeg.exe') -Destination (Join-Path $package 'ffmpeg.exe')
+Copy-Item -LiteralPath (Join-Path $upstream 'bin/ffprobe.exe') -Destination (Join-Path $package 'ffprobe.exe')
 foreach ($notice in (Get-ChildItem -LiteralPath $upstream -File | Where-Object { $_.Name -match '^(license|readme)' })) {
     Copy-Item -LiteralPath $notice.FullName -Destination (Join-Path $notices $notice.Name.ToLowerInvariant())
 }
@@ -39,7 +40,7 @@ elaina $version - windows x64 portable
 应用缓存保存在本目录的 data 文件夹，移动时请一并移动。
 关闭程序后删除此文件夹即可移除应用及其缓存（导出的媒体文件保留在你选择的位置）。
 
-不要删除或拆开 elaina.exe、ffmpeg.exe 和 portable 标记文件。
+不要删除或拆开 elaina.exe、ffmpeg.exe、ffprobe.exe 和 portable 标记文件。
 如设置了 elaina_ffmpeg 环境变量，该路径会优先于随包 ffmpeg。
 
 项目及源码：https://github.com/yukinsnow/elaina

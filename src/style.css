@@ -83,6 +83,11 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { appearance:
 .primary { background: #807088; border-color: #807088; color: #fff; min-width: 98px; font-size: 12px; }
 .primary:hover:not(:disabled) { background: #6d5c76; border-color: #6d5c76; }
 .primary:disabled { opacity: .65; }
+.workbench { margin-bottom: 10px; }
+.app-credit { flex-shrink: 0; display: flex; justify-content: flex-end; padding: 0 28px 12px; line-height: 1.6; }
+.app-credit a { color: #8b7d96; font-size: 11px; text-decoration: none; }
+.app-credit a:hover { color: #60506e; text-decoration: underline; text-underline-offset: 3px; }
+.app-credit a:focus-visible { outline: 2px solid #827193; outline-offset: 3px; border-radius: 2px; }
 .art-caption { position: absolute; right: 28px; top: 140px; text-align: right; color: #a99db4; }
 .art-caption span { font: italic 31px Georgia, serif; letter-spacing: -1px; }
 .art-caption p { margin: 7px 0 0; color: #b8b0bd; font-size: 9px; }

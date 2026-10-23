@@ -45,7 +45,7 @@
 
 ### windows 绿色版（推荐）
 
-下载 release 中的 `elaina-2.1.0-windows-x64-portable.zip`，完整解压到可写目录，双击 `elaina.exe` 即可运行。随包包含 ffmpeg 和 ffprobe，不需要配置 path、安装应用或管理员权限。需要系统已有 webview2；绿色包不安装系统组件。
+下载 release 中的 `elaina-2.1.1-windows-x64-portable.zip`，完整解压到可写目录，双击 `elaina.exe` 即可运行。随包包含 ffmpeg 和 ffprobe，不需要配置 path、安装应用或管理员权限。需要系统已有 webview2；绿色包不安装系统组件。
 
 应用缓存保存在同目录的 `data` 文件夹。移动时请保留 `elaina.exe`、`ffmpeg.exe`、`ffprobe.exe` 和 `portable` 标记文件；关闭应用后删除整个目录即可移除应用与缓存，已导出的媒体文件不受影响。系统运行组件自身可能保留操作系统管理的记录。
 
@@ -156,7 +156,7 @@ tests/                      前端参数测试
 
 沿用原仓库声明的 GPL 许可；原仓库未指定版本，此处不额外指定版本。
 
-- 原作者：[yukinsnow](https://github.com/yukinsnow)。
+- 原作者：[Github@Yukinsnow](https://github.com/yukinsnow)，应用底部署名可直接打开作者主页。
 - 原角色插图署名：童心圆，[bilibili](https://space.bilibili.com/358219200)。
 - elaina 角色来自《魔女之旅》，原仓库声明应用为开源非营利用途；角色与插图权利归各自权利人所有。
 - 保留原应用图标、背景插图及 photon 图标字体；[原版截图](screenshot.png) 留作参考。

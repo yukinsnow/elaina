@@ -37,6 +37,7 @@ root.innerHTML = `
     </form>
     <footer class="action-bar"><div class="status-block"><strong id="status-title">准备就绪</strong><p id="status" role="status" aria-live="polite">选择视频和输出位置。</p></div><button type="button" id="cancel" hidden>取消</button><button type="submit" form="job-form" class="primary" id="submit">开始压制</button></footer>
   </div>
+  <footer class="app-credit"><a id="github-credit" href="https://github.com/yukinsnow" target="_blank" rel="noopener noreferrer" aria-label="Github@Yukinsnow，打开 GitHub 主页">Github@Yukinsnow</a></footer>
 </div>`;
 
 function element<t extends HTMLElement>(id: string): t { return document.getElementById(id) as t; }
@@ -48,6 +49,12 @@ let native_ready = false;
 let source_info: inspection | undefined;
 let inspect_generation = 0;
 let unsubscribe: unlisten_fn | undefined;
+element('github-credit').addEventListener('click', async event => {
+  if (!native_ready) return;
+  event.preventDefault();
+  try { await invoke('open_github'); }
+  catch (error) { status('无法打开主页', String(error), 'error'); }
+});
 const actions = { encode: '开始压制', replace: '替换音频', extract: '提取音频' };
 
 function status(title: string, message: string, state = '') {

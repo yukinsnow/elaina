@@ -1,6 +1,6 @@
 [package]
 name = "elaina"
-version = "2.1.0"
+version = "2.1.1"
 description = "local video and audio toolkit"
 authors = ["yukinsnow"]
 edition = "2021"
@@ -13,6 +13,7 @@ tauri = { version = "2.12", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rfd = "0.15"
+tauri-plugin-opener = "2"
 
 [profile.release]
 lto = true

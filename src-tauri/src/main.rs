@@ -8,6 +8,12 @@ mod inspect;
 use serde::Serialize as serialize;
 use std::{io::{BufRead as buf_read, BufReader as buf_reader, Read as read}, process::{Child as child, Command as command, Stdio as stdio}, sync::Mutex as mutex, time::Duration as duration};
 use tauri::{Emitter as emitter, Manager as manager};
+use tauri_plugin_opener::OpenerExt as opener_ext;
+
+#[tauri::command]
+fn open_github(app: tauri::AppHandle) -> Result<(), String> {
+    app.opener().open_url("https://github.com/yukinsnow", None::<&str>).map_err(|e| e.to_string())
+}
 
 #[derive(Default)]
 struct task { child: Option<child>, cancelled: bool }
@@ -133,7 +139,8 @@ fn main() {
         }
     }
     tauri::Builder::default().manage(tasks::default())
-        .invoke_handler(tauri::generate_handler![choose_file, inspect_media, start_job, cancel_job])
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![choose_file, inspect_media, start_job, cancel_job, open_github])
         .build(context).expect("failed to build elaina")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
